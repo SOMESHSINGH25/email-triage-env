@@ -1,6 +1,6 @@
-# 📬 Email Triage — OpenEnv Environment
+# 📬 Email Triage: OpenEnv Environment
 
-An OpenEnv-compliant environment where an AI agent learns to triage a
+An OpenEnv compliant environment where an AI agent learns to triage a
 corporate inbox through three progressively harder tasks: classifying emails,
 prioritising and routing them to the right queues, and drafting
 policy-compliant customer replies.
@@ -9,9 +9,9 @@ policy-compliant customer replies.
 
 ## Why email triage?
 
-Email triage is a canonical real-world task:
+Email triage is a canonical real world task:
 - Humans spend ~28 % of the working week reading and answering email
-- It requires multi-step reasoning, policy compliance, and tone awareness
+- It requires multi step reasoning, policy compliance, and tone awareness
 - It has clear ground truth enabling objective, deterministic grading
 - It scales naturally from simple classification to open-ended generation
 
