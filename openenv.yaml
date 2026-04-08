@@ -1,0 +1,76 @@
+spec_version: 1
+type: space
+
+name: email-triage
+version: "1.0.0"
+description: >
+  Email Triage OpenEnv — a real-world environment where an AI agent learns
+  to triage a corporate inbox: classifying emails, prioritising and routing
+  them to the correct queues, and drafting policy-compliant customer replies.
+
+author: "Hackathon Submission"
+
+tags:
+  - openenv
+  - email
+  - triage
+  - nlp
+  - customer-support
+
+runtime:
+  type: fastapi
+  app: server.app:app
+  port: 8000
+
+tasks:
+  - name: task1_classify
+    difficulty: easy
+    description: "Classify each email into: spam, billing, support, sales, engineering."
+    max_steps: 6
+    reward_range: [0.0, 1.0]
+
+  - name: task2_prioritise
+    difficulty: medium
+    description: "Assign urgency (low/medium/high/critical) and route to correct queue."
+    max_steps: 12
+    reward_range: [0.0, 1.0]
+
+  - name: task3_draft_reply
+    difficulty: hard
+    description: "Draft a policy-compliant reply: apologise, give ETA, no blame, be actionable."
+    max_steps: 2
+    reward_range: [0.0, 1.0]
+
+observation_space:
+  type: object
+  fields:
+    emails:
+      type: array
+      items: Email
+    current_email:
+      type: Email
+      nullable: true
+    step:
+      type: integer
+    task_description:
+      type: string
+    context:
+      type: object
+
+action_space:
+  type: object
+  fields:
+    action_type:
+      type: string
+      enum: [classify, prioritize, route, draft_reply, skip]
+    email_id:
+      type: string
+    value:
+      type: string
+
+reward:
+  type: float
+  range: [0.0, 1.0]
+
+docker:
+  port: 8000
