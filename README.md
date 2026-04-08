@@ -1,17 +1,17 @@
-# 📬 Email Triage — OpenEnv AI Environment
+# 📬 Email Triage: OpenEnv AI Environment
 
-A **real-world AI training environment** where an agent learns to triage a corporate inbox through progressively harder tasks: classification, prioritisation, routing, and drafting compliant customer replies.
+A **real world AI training environment** where an agent learns to triage a corporate inbox through progressively harder tasks: classification, prioritisation, routing, and drafting compliant customer replies.
 
 ---
 
 ## 🧠 What is this project?
 
-This is **not a traditional app** — it is an **OpenEnv-compliant simulation environment**.
+This is **not a traditional app** — it is an **OpenEnv compliant simulation environment**.
 
 It allows an AI agent to:
 - Observe an inbox
 - Take structured actions
-- Receive **step-wise rewards**
+- Receive **step wise rewards**
 - Improve performance over time
 
 👉 Think of it as a **gym for AI agents** to learn real-world email handling.
@@ -39,7 +39,7 @@ Inbox → Agent Action → Evaluation → Reward → Next Step
 ```
 
 This enables:
-- Reinforcement learning-style training
+- Reinforcement learning style training
 - Deterministic benchmarking of LLMs
 - Structured evaluation of agent behavior
 
@@ -49,20 +49,25 @@ This enables:
 
 ```
 email-triage-env/
-├── openenv.yaml          # OpenEnv specification
-├── Dockerfile            # Container setup (port 7860)
-├── requirements.txt      # Dependencies
-├── client.py             # Python API client
-├── inference.py          # Baseline LLM agent
+│
+├── openenv.yaml
+├── pyproject.toml
+├── uv.lock
+├── inference.py
+├── client.py
+├── README.md
 │
 ├── env/
-│   ├── environment.py    # Core OpenEnv interface (reset/step/state)
-│   ├── tasks.py          # Task logic + reward functions
-│   ├── data.py           # Synthetic dataset + ground truth
-│   └── models.py         # Pydantic schemas
+│   ├── __init__.py
+│   ├── data.py
+│   ├── models.py
+│   ├── tasks.py
+│   └── environment.py
 │
-└── api/
-    └── main.py           # FastAPI server
+└── server/
+    ├── __init__.py
+    ├── app.py
+    └── Dockerfile
 ```
 
 ---
