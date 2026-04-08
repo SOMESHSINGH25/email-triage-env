@@ -1,264 +1,257 @@
-# 📬 Email Triage: OpenEnv Environment
+# 📬 Email Triage: OpenEnv AI Environment
 
-An OpenEnv compliant environment where an AI agent learns to triage a
-corporate inbox through three progressively harder tasks: classifying emails,
-prioritising and routing them to the right queues, and drafting
-policy-compliant customer replies.
+A **real world AI training environment** where an agent learns to triage a corporate inbox through progressively harder tasks: classification, prioritisation, routing, and drafting compliant customer replies.
 
 ---
 
-## Why email triage?
+## 🧠 What is this project?
 
-Email triage is a canonical real world task:
-- Humans spend ~28 % of the working week reading and answering email
-- It requires multi step reasoning, policy compliance, and tone awareness
-- It has clear ground truth enabling objective, deterministic grading
-- It scales naturally from simple classification to open-ended generation
+This is **not a traditional app** — it is an **OpenEnv compliant simulation environment**.
+
+It allows an AI agent to:
+- Observe an inbox
+- Take structured actions
+- Receive **step wise rewards**
+- Improve performance over time
+
+👉 Think of it as a **gym for AI agents** to learn real-world email handling.
 
 ---
 
-## Project structure
+## 🎯 Why email triage?
+
+Email triage is a canonical real-world task:
+
+- Professionals spend ~28% of their time on email
+- Requires **multi-step reasoning**
+- Involves **policy compliance + tone control**
+- Has **clear ground truth → objective evaluation**
+- Scales from simple classification → complex generation
+
+---
+
+## ⚙️ Core idea
+
+The environment simulates:
+
+```
+Inbox → Agent Action → Evaluation → Reward → Next Step
+```
+
+This enables:
+- Reinforcement learning style training
+- Deterministic benchmarking of LLMs
+- Structured evaluation of agent behavior
+
+---
+
+## 📂 Project structure
 
 ```
 email-triage-env/
-├── openenv.yaml          # OpenEnv spec metadata
-├── Dockerfile            # Container build (port 7860)
-├── requirements.txt      # Runtime dependencies
-├── client.py             # HTTP client (EnvClient)
-├── inference.py          # Baseline LLM agent
+│
+├── openenv.yaml
+├── pyproject.toml
+├── uv.lock
+├── inference.py
+├── client.py
+├── README.md
 │
 ├── env/
 │   ├── __init__.py
-│   ├── environment.py    # EmailTriageEnv  (reset / step / state / close)
-│   ├── tasks.py          # Task1Classify, Task2Prioritise, Task3DraftReply + graders
-│   ├── data.py           # 10 synthetic emails, ground-truth labels, reference replies
-│   └── models.py         # Pydantic models: Email, EmailTriageAction, EmailTriageObservation
+│   ├── data.py
+│   ├── models.py
+│   ├── tasks.py
+│   └── environment.py
 │
-└── api/
-    └── main.py           # FastAPI app  (/reset /step /state /tasks /health)
+└── server/
+    ├── __init__.py
+    ├── app.py
+    └── Dockerfile
 ```
 
 ---
 
-## Tasks
+## 🧩 Tasks
 
-| ID | Name | Difficulty | Agent action | Max steps |
-|----|------|-----------|-------------|-----------|
-| `task1_classify` | Email Classification | Easy | Classify each email: `spam` / `billing` / `support` / `sales` / `engineering` | 6 |
-| `task2_prioritise` | Prioritise & Route | Medium | Alternate: assign urgency (`low`/`medium`/`high`/`critical`) then route to correct queue | 12 |
-| `task3_draft_reply` | Draft Reply | Hard | Write a policy-compliant reply (apologise, give ETA, no blame, actionable) | 2 |
-
----
-
-## Reward functions
-
-| Task | Logic |
-|------|-------|
-| `task1_classify` | **1.0** exact match · **0.5** semantically adjacent (e.g. `engineering` ↔ `support`) · **0.0** otherwise |
-| `task2_prioritise` | Urgency correct **+0.4** · off by one level **+0.2** · route correct **+0.6** · per email max **1.0** |
-| `task3_draft_reply` | Keywords present **+0.4** · policy rules (apologise, ETA, no-blame) **+0.4** · forbidden phrases **−0.1 each** · no actionable commitment **−0.1** · clamped to **[0.0, 1.0]** |
-
-All rewards are **dense** (provided every step, not just at episode end).  
-`skip` actions carry an additional **−0.2** penalty.
+| Task | Description | Difficulty |
+|------|------------|-----------|
+| `task1_classify` | Classify emails into categories | Easy |
+| `task2_prioritise` | Assign urgency + route to correct queue | Medium |
+| `task3_draft_reply` | Generate policy-compliant replies | Hard |
 
 ---
 
-## Baseline scores (Qwen/Qwen2.5-72B-Instruct via HF router)
+## 🏆 Reward design
+
+### Task 1 — Classification
+- ✅ Exact match → **1.0**
+- ⚖️ Adjacent category → **0.5**
+- ❌ Wrong → **0.0**
+
+---
+
+### Task 2 — Prioritise & Route
+Per email:
+- Urgency → **0.4**
+- Routing → **0.6**
+
+Partial credit for near-correct urgency.
+
+---
+
+### Task 3 — Draft Reply
+Multi-component reward:
+- Keywords → **0.4**
+- Policy compliance → **0.4**
+- Forbidden phrases → **−0.1 each**
+- No actionable commitment → **−0.1**
+
+All rewards are **dense (step-wise)**.
+
+---
+
+## 🤖 Baseline agent
+
+Runs via `inference.py` using an OpenAI-compatible client.
+
+**Default model:**
+```
+Qwen/Qwen2.5-72B-Instruct
+```
+
+### Sample performance
 
 | Task | Score |
-|------|-------|
-| `task1_classify` | ~0.83 |
-| `task2_prioritise` | ~0.67 |
-| `task3_draft_reply` | ~0.60 |
+|------|------|
+| Classification | ~0.9 |
+| Prioritise | ~0.8–0.9 |
+| Draft Reply | ~0.6–0.7 |
 
 ---
 
-## Action space
+## 🔌 API
 
-```json
-{
-  "action_type": "classify | prioritize | route | draft_reply | skip",
-  "email_id":   "<string>",
-  "value":      "<string>"
-}
-```
-
-| `action_type` | valid `value` |
-|---------------|--------------|
-| `classify`    | `spam` `billing` `support` `sales` `engineering` |
-| `prioritize`  | `low` `medium` `high` `critical` |
-| `route`       | `spam` `billing` `support` `sales` `engineering` |
-| `draft_reply` | Free-text reply string |
-| `skip`        | Reason string (−0.2 penalty) |
+| Method | Endpoint | Description |
+|--------|--------|-------------|
+| GET | `/health` | Health check |
+| GET | `/tasks` | Available tasks |
+| GET | `/state` | Current state |
+| POST | `/reset` | Start new episode |
+| POST | `/step` | Take action |
 
 ---
 
-## Observation space
+## 🚀 Setup
 
-```json
-{
-  "emails":           [...],
-  "current_email":    {"id": "e001", "subject": "...", "body": "...", "sender": "...", "timestamp": "..."},
-  "step":             0,
-  "task_description": "...",
-  "context": {
-    "valid_categories": [...],
-    "expected_action":  "prioritize | route",
-    "feedback":         "...",
-    "policy":           "..."
-  }
-}
-```
-
----
-
-## Setup and usage
-
-### Prerequisites
-
-- Python ≥ 3.11
-- A HuggingFace token (or any OpenAI-compatible API key)
-
-### Local — Python
+### 1. Clone
 
 ```bash
 git clone <repo-url>
 cd email-triage-env
+```
 
+---
+
+### 2. Install
+
+```bash
 pip install -r requirements.txt
-
-# Start the API server
-uvicorn api.main:app --host 0.0.0.0 --port 7860 --reload
 ```
 
-The server is ready when `/health` returns `{"status": "ok"}`.
+---
+
+### 3. Set environment variables
+
+Create `.env`:
+
+```env
+HF_TOKEN=your_token_here
+API_BASE_URL=https://router.huggingface.co/v1
+MODEL_NAME=Qwen/Qwen2.5-72B-Instruct
+```
+
+---
+
+### 4. Run server
 
 ```bash
-# In a second terminal — run the baseline agent
-export HF_TOKEN=hf_...
+uvicorn api.main:app --host 0.0.0.0 --port 7860
+```
+
+---
+
+### 5. Run agent
+
+```bash
 python inference.py
 ```
 
-### Docker
+---
 
-```bash
-docker build -t email-triage-env .
+## 📊 Output format (strict)
 
-docker run -p 7860:7860 \
-  -e HF_TOKEN=hf_... \
-  -e API_BASE_URL=https://router.huggingface.co/v1 \
-  -e MODEL_NAME=Qwen/Qwen2.5-72B-Instruct \
-  email-triage-env
+```
+[START] task=... env=email-triage model=...
+[STEP] step=... action=... reward=... done=...
+[END] success=... steps=... rewards=...
 ```
 
 ---
 
-## HTTP API
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET`  | `/health` | Returns `{"status": "ok", "env": "email-triage", "version": "1.0.0"}` |
-| `GET`  | `/tasks`  | Lists available task names |
-| `GET`  | `/state`  | Current env state (steps, score, reward history) |
-| `POST` | `/reset`  | Start a new episode |
-| `POST` | `/step`   | Submit one action |
-| `GET`  | `/`       | Index / discovery |
-
-### Quick-start with curl
+## 🧪 Example usage
 
 ```bash
-# Reset to task 1
-curl -s -X POST http://localhost:7860/reset \
+curl -X POST http://localhost:7860/reset \
   -H "Content-Type: application/json" \
-  -d '{"task_name": "task1_classify"}' | jq .
-
-# Classify an email
-curl -s -X POST http://localhost:7860/step \
-  -H "Content-Type: application/json" \
-  -d '{"action_type": "classify", "email_id": "e001", "value": "spam"}' | jq .
-
-# Check state
-curl -s http://localhost:7860/state | jq .
+  -d '{"task_name": "task1_classify"}'
 ```
 
 ---
 
-## Using the Python client
+## 🧠 Design choices
 
-```python
-from client import EnvClient
+### Synthetic dataset
+- 10 curated emails
+- Covers support, billing, spam, engineering, sales
+- Includes realistic edge cases
 
-client = EnvClient()                  # default: http://localhost:7860
-client.wait_until_healthy()
+### Internal email IDs
+- IDs like `e001`, `e002` are **internal identifiers**
+- Not real email addresses (by design)
 
-# Reset
-resp = client.reset("task1_classify")
-obs  = resp["observation"]
-
-# Step loop
-while not obs.get("done"):
-    email_id = obs["current_email"]["id"]
-    result   = client.step("classify", email_id, "support")
-    obs      = result["observation"]
-    print(result["reward"], result["done"], result["info"]["feedback"])
-
-print("Score:", client.state()["score"])
-```
+### No name assumptions
+- Agent instructed to avoid hallucinating names
+- Uses neutral addressing (e.g. "Customer")
 
 ---
 
-## Running inference.py
+## 🔧 Extensibility
 
-```bash
-export HF_TOKEN=hf_...
-# Optional overrides:
-export API_BASE_URL=https://router.huggingface.co/v1
-export MODEL_NAME=Qwen/Qwen2.5-72B-Instruct
-
-python inference.py
-```
-
-### Log output format
-
-```
-[START] task=task1_classify env=email-triage model=Qwen/Qwen2.5-72B-Instruct
-[STEP] step=1 action={"action_type": "classify", "email_id": "e001", "value": "spam"} reward=1.00 done=false error=null
-[STEP] step=2 action={"action_type": "classify", "email_id": "e003", "value": "billing"} reward=1.00 done=false error=null
-...
-[END] success=true steps=6 score=0.833 rewards=1.00,1.00,1.00,0.50,1.00,1.00
-
-[START] task=task2_prioritise env=email-triage model=Qwen/Qwen2.5-72B-Instruct
-...
-[END] success=true steps=12 score=0.667 rewards=...
-
-[START] task=task3_draft_reply env=email-triage model=Qwen/Qwen2.5-72B-Instruct
-...
-[END] success=true steps=2 score=0.600 rewards=...
-```
+- Add emails → `env/data.py`
+- Add tasks → `env/tasks.py`
+- Swap models → change env variables
+- Plug into RL pipelines → OpenEnv compatible
 
 ---
 
-## Environment variables
+## 💡 Why this matters
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `HF_TOKEN` | Yes | — | HuggingFace / API key (also accepted as `API_KEY`) |
-| `API_BASE_URL` | No | `https://router.huggingface.co/v1` | OpenAI-compatible LLM endpoint |
-| `MODEL_NAME` | No | `Qwen/Qwen2.5-72B-Instruct` | Model identifier |
-| `ENV_BASE_URL` | No | `http://localhost:7860` | Server URL used by `client.py` |
+This project demonstrates:
 
----
-
-## Extending the environment
-
-**Add emails** — edit `env/data.py`: append to `EMAILS` and add entries to `GROUND_TRUTH` (and `REFERENCE_REPLIES` for task 3).
-
-**Add a task** — create a new `TaskN` class in `env/tasks.py` following the same `reset() / step() / score()` pattern, then register it in `TASKS`.
-
-**Swap the LLM** — set `API_BASE_URL` and `MODEL_NAME` to any OpenAI-compatible endpoint (Together AI, Fireworks, local vLLM, etc.).
+- Structured evaluation of LLM agents
+- Real-world task simulation
+- Multi-step reasoning with feedback
+- Policy-aware text generation
 
 ---
 
-## License
+## 🏁 Summary
+
+> A scalable, realistic environment where AI agents learn to handle email workflows with measurable performance.
+
+---
+
+## 📜 License
 
 MIT
