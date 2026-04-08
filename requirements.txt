@@ -1,0 +1,18 @@
+# requirements.txt — Email Triage OpenEnv
+# All direct runtime dependencies for the server (api/) and inference script.
+
+#Web framework 
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+
+#Data validation
+pydantic>=2.6.0
+
+#LLM client (used by inference.py)
+openai>=1.30.0
+
+#HTTP client (used by client.py) 
+requests>=2.31.0
+
+#Utilities 
+python-dotenv>=1.0.0
